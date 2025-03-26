@@ -33,7 +33,7 @@ typedef struct BOSCNanhuSocState {
     /*< public >*/
     RISCVHartArrayState cpus;
     DeviceState *plic;
-    MemoryRegion mask_rom;
+    MemoryRegion rom;
 } BOSCNanhuSocState;
 
 typedef struct NanhuState {
@@ -50,19 +50,20 @@ typedef struct NanhuState {
     OBJECT_CHECK(NanhuState, (obj), TYPE_RISCV_NANHU_MACHINE)
 
 enum {
-    NANHU_DEV_MROM,
+    NANHU_DEV_ROM,
     NANHU_DEV_UART0,
+    NANHU_DEV_UART1,
     NANHU_DEV_CLINT,
     NANHU_DEV_PLIC,
     NANHU_DEV_DRAM,
 };
 
 enum {
-    UART0_IRQ = 40,
+    UART0_IRQ = 68,
 };
 
 #define BOSC_NANHU_PLIC_HART_CONFIG "MS"
-#define BOSC_NANHU_PLIC_NUM_SOURCES 96
+#define BOSC_NANHU_PLIC_NUM_SOURCES 128
 #define BOSC_NANHU_PLIC_NUM_PRIORITIES 7
 #define BOSC_NANHU_PLIC_PRIORITY_BASE 0x00
 #define BOSC_NANHU_PENDING_BASE 0x1000
