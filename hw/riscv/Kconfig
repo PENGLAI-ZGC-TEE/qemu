@@ -111,3 +111,9 @@ config SPIKE
     select HTIF
     select RISCV_ACLINT
     select SIFIVE_PLIC
+
+config BOSC_NANHU
+    bool
+    select SERIAL_MM
+    select RISCV_ACLINT
+    select SIFIVE_PLIC
