@@ -160,7 +160,7 @@ static void bosc_nanhu_machine_class_init(ObjectClass *oc, void *data)
     /* machine properties */
     mc->desc = "RISC-V Board compatible with BOSC Xiangshan Nanhu SoC";
     mc->init = nanhu_machine_init;
-    mc->max_cpus = 2; // conpate with Nanhu-v3a board
+    mc->max_cpus = 1; // conpate with Nanhu-v3a board
     mc->default_cpu_type = TYPE_RISCV_CPU_BOSC_NANHU;
     mc->default_ram_id = "riscv.bosc.nanhu.ram";
     mc->default_ram_size = 8 * GiB; // conpate with Nanhu-v3a board
