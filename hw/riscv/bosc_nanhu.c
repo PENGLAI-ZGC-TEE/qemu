@@ -43,7 +43,7 @@
 
 static const MemMapEntry nanhu_memmap[] = {
     [NANHU_DEV_ROM] = {0x0, 0x40000},
-    [NANHU_DEV_UART0] = {0x50000, 0x10000},
+    [NANHU_DEV_UART0] = {0x310B0000, 0x10000},
     [NANHU_DEV_UART1] = {0x60000, 0x10000},
     [NANHU_DEV_CLINT] = {0x38000000, 0x10000},
     [NANHU_DEV_PLIC] = {0x3C000000, 0x4000000},
