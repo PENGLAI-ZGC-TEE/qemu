@@ -1485,6 +1485,20 @@ static RISCVException read_mvendorid(CPURISCVState *env, int csrno,
     return RISCV_EXCP_NONE;
 }
 
+static RISCVException read_ws_csr(CPURISCVState *env, int csrno,
+                                  target_ulong *val)
+{
+    *val = env->ws_csr & 0x1;
+    return RISCV_EXCP_NONE;
+}
+
+static RISCVException write_ws_csr(CPURISCVState *env, int csrno,
+                                   target_ulong val)
+{
+    env->ws_csr = val & 0x1;
+    return RISCV_EXCP_NONE;
+}
+
 static RISCVException read_marchid(CPURISCVState *env, int csrno,
                                    target_ulong *val)
 {
@@ -5034,6 +5048,7 @@ riscv_csr_operations csr_ops[CSR_TABLE_SIZE] = {
     [CSR_MARCHID]   = { "marchid",   any,   read_marchid   },
     [CSR_MIMPID]    = { "mimpid",    any,   read_mimpid    },
     [CSR_MHARTID]   = { "mhartid",   any,   read_mhartid   },
+    [CSR_WSCSR]     = { "ws_csr",    any,   read_ws_csr,   write_ws_csr },
 
     [CSR_MCONFIGPTR]  = { "mconfigptr", any,   read_zero,
                           .min_priv_ver = PRIV_VERSION_1_12_0 },

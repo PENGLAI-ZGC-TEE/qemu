@@ -42,6 +42,12 @@ typedef struct PLICAddr {
     PLICMode mode;
 } PLICAddr;
 
+typedef struct PLICTeeTrack {
+    uint16_t irq_id;
+    uint8_t req_sec;
+    uint8_t in_service;
+} PLICTeeTrack;
+
 struct SiFivePLICState {
     /*< private >*/
     SysBusDevice parent_obj;
@@ -58,6 +64,8 @@ struct SiFivePLICState {
     uint32_t *pending;
     uint32_t *claimed;
     uint32_t *enable;
+    uint32_t *sec_src;
+    PLICTeeTrack *irq_track;
 
     /* config */
     char *hart_config;

@@ -406,6 +406,8 @@ struct CPUArchState {
 
     target_ulong sscratch;
     target_ulong mscratch;
+    /* World-state CSR (0=non-secure, 1=secure) */
+    target_ulong ws_csr;
 
     /* Sstc CSRs */
     uint64_t stimecmp;
