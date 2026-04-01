@@ -224,6 +224,15 @@ static uint64_t sifive_plic_read(void *opaque, hwaddr addr, unsigned size)
         } else if (contextid == 4) {
             uint32_t max_irq = sifive_plic_claimed(plic, addrid);
 
+            qemu_log_mask(LOG_GUEST_ERROR,
+                          "plic-mmio claim-read: addr=0x%" HWADDR_PRIx
+                          " ctx=%u hart=%u mode=%c max_irq=%u\n",
+                          addr, addrid,
+                          plic->addr_config[addrid].hartid,
+                          plic->addr_config[addrid].mode == PLICMode_M ? 'M' :
+                          plic->addr_config[addrid].mode == PLICMode_S ? 'S' : 'U',
+                          max_irq);
+
             if (max_irq) {
                 sifive_plic_set_pending(plic, max_irq, false);
                 sifive_plic_set_claimed(plic, max_irq, true);
@@ -335,6 +344,15 @@ static void sifive_plic_write(void *opaque, hwaddr addr, uint64_t value,
             if (value < plic->num_sources) {
                 uint32_t irq = value;
                 PLICTeeTrack *track = &plic->irq_track[addrid];
+
+                qemu_log_mask(LOG_GUEST_ERROR,
+                              "plic-mmio complete-write: addr=0x%" HWADDR_PRIx
+                              " ctx=%u hart=%u mode=%c irq=%u\n",
+                              addr, addrid,
+                              plic->addr_config[addrid].hartid,
+                              plic->addr_config[addrid].mode == PLICMode_M ? 'M' :
+                              plic->addr_config[addrid].mode == PLICMode_S ? 'S' : 'U',
+                              irq);
 
                 if (track->in_service &&
                     track->irq_id == irq &&
