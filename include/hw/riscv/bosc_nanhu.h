@@ -64,6 +64,7 @@ enum
 enum
 {
     UART0_IRQ = 40,
+    UART1_IRQ = 41,
 };
 
 #define BOSC_NANHU_PLIC_HART_CONFIG "MS"

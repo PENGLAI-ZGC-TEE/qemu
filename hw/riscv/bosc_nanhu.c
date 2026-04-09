@@ -89,8 +89,10 @@ static void bosc_nanhu_soc_realize(DeviceState *dev_soc, Error **errp)
                    serial_hd(0), DEVICE_LITTLE_ENDIAN);
 
     /* UART1 */
-    create_unimplemented_device("riscv.bosc.nanhu.uart1",
-                                memmap[NANHU_DEV_UART1].base, memmap[NANHU_DEV_UART1].size);
+    serial_mm_init(sys_mem,
+                   memmap[NANHU_DEV_UART1].base, 2,
+                   qdev_get_gpio_in(s->plic, UART1_IRQ), 399193,
+                   serial_hd(1), DEVICE_LITTLE_ENDIAN);
 
     /* ROM */
     memory_region_init_rom(&s->rom, OBJECT(dev_soc), "riscv.bosc.nanhu.rom", memmap[NANHU_DEV_ROM].size, &error_fatal);
