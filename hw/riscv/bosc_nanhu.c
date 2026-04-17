@@ -40,11 +40,119 @@
 #include "hw/intc/sifive_plic.h"
 #include "hw/char/serial.h"
 #include "hw/char/serial-mm.h"
+#include "qemu/log.h"
+#include "qemu/module.h"
+#include "qom/object.h"
+#include "hw/irq.h"
+
+#define TYPE_BOSC_NANHU_IRQGEN "bosc-nanhu-irqgen"
+OBJECT_DECLARE_SIMPLE_TYPE(BOSCNanhuIrqGenState, BOSC_NANHU_IRQGEN)
+
+typedef struct BOSCNanhuIrqGenState {
+    SysBusDevice parent_obj;
+
+    MemoryRegion iomem;
+    qemu_irq irq;
+    uint32_t pulse_count;
+    uint32_t last_value;
+} BOSCNanhuIrqGenState;
+
+enum {
+    IRQGEN_REG_TRIGGER = 0x0,
+    IRQGEN_REG_COUNT = 0x4,
+    IRQGEN_REG_LAST = 0x8,
+};
+
+static uint64_t bosc_nanhu_irqgen_read(void *opaque, hwaddr offset,
+                                       unsigned size)
+{
+    BOSCNanhuIrqGenState *s = opaque;
+
+    switch (offset) {
+    case IRQGEN_REG_TRIGGER:
+        return 0;
+    case IRQGEN_REG_COUNT:
+        return s->pulse_count;
+    case IRQGEN_REG_LAST:
+        return s->last_value;
+    default:
+        qemu_log_mask(LOG_GUEST_ERROR,
+                      "%s: invalid read offset 0x%" HWADDR_PRIx "\n",
+                      __func__, offset);
+        return 0;
+    }
+}
+
+static void bosc_nanhu_irqgen_write(void *opaque, hwaddr offset,
+                                    uint64_t value, unsigned size)
+{
+    BOSCNanhuIrqGenState *s = opaque;
+
+    switch (offset) {
+    case IRQGEN_REG_TRIGGER:
+        s->last_value = value;
+        if (value & 0x1) {
+            s->pulse_count++;
+            qemu_set_irq(s->irq, 1);
+            qemu_set_irq(s->irq, 0);
+        }
+        break;
+    case IRQGEN_REG_COUNT:
+        if (value == 0)
+            s->pulse_count = 0;
+        break;
+    case IRQGEN_REG_LAST:
+        s->last_value = value;
+        break;
+    default:
+        qemu_log_mask(LOG_GUEST_ERROR,
+                      "%s: invalid write offset 0x%" HWADDR_PRIx
+                      " value=0x%" PRIx64 "\n",
+                      __func__, offset, value);
+    }
+}
+
+static const MemoryRegionOps bosc_nanhu_irqgen_ops = {
+    .read = bosc_nanhu_irqgen_read,
+    .write = bosc_nanhu_irqgen_write,
+    .endianness = DEVICE_LITTLE_ENDIAN,
+    .valid = {
+        .min_access_size = 4,
+        .max_access_size = 4,
+    },
+};
+
+static void bosc_nanhu_irqgen_init(Object *obj)
+{
+    BOSCNanhuIrqGenState *s = BOSC_NANHU_IRQGEN(obj);
+    SysBusDevice *sbd = SYS_BUS_DEVICE(obj);
+
+    memory_region_init_io(&s->iomem, obj, &bosc_nanhu_irqgen_ops, s,
+                          TYPE_BOSC_NANHU_IRQGEN, 0x1000);
+    sysbus_init_mmio(sbd, &s->iomem);
+    sysbus_init_irq(sbd, &s->irq);
+}
+
+static const TypeInfo bosc_nanhu_irqgen_info = {
+    .name          = TYPE_BOSC_NANHU_IRQGEN,
+    .parent        = TYPE_SYS_BUS_DEVICE,
+    .instance_size = sizeof(BOSCNanhuIrqGenState),
+    .instance_init = bosc_nanhu_irqgen_init,
+};
+
+static void bosc_nanhu_irqgen_register_types(void)
+{
+    type_register_static(&bosc_nanhu_irqgen_info);
+}
+
+type_init(bosc_nanhu_irqgen_register_types)
 
 static const MemMapEntry nanhu_memmap[] = {
     [NANHU_DEV_ROM] = {0x0, 0x40000},
     [NANHU_DEV_UART0] = {0x310B0000, 0x10000},
     [NANHU_DEV_UART1] = {0x60000, 0x10000},
+    [NANHU_DEV_IRQGEN_NS] = {0x30000000, 0x1000},
+    [NANHU_DEV_IRQGEN_SEC] = {0x30001000, 0x1000},
     [NANHU_DEV_CLINT] = {0x38000000, 0x10000},
     [NANHU_DEV_PLIC] = {0x3C000000, 0x4000000},
     [NANHU_DEV_DRAM] = {0x80000000, 0x0},
@@ -93,6 +201,16 @@ static void bosc_nanhu_soc_realize(DeviceState *dev_soc, Error **errp)
                    memmap[NANHU_DEV_UART1].base, 2,
                    qdev_get_gpio_in(s->plic, UART1_IRQ), 399193,
                    serial_hd(1), DEVICE_LITTLE_ENDIAN);
+
+    /* Dedicated non-secure IRQ generator */
+    sysbus_create_simple(TYPE_BOSC_NANHU_IRQGEN,
+                         memmap[NANHU_DEV_IRQGEN_NS].base,
+                         qdev_get_gpio_in(s->plic, IRQGEN_NS_IRQ));
+
+    /* Dedicated secure IRQ generator */
+    sysbus_create_simple(TYPE_BOSC_NANHU_IRQGEN,
+                         memmap[NANHU_DEV_IRQGEN_SEC].base,
+                         qdev_get_gpio_in(s->plic, IRQGEN_SEC_IRQ));
 
     /* ROM */
     memory_region_init_rom(&s->rom, OBJECT(dev_soc), "riscv.bosc.nanhu.rom", memmap[NANHU_DEV_ROM].size, &error_fatal);
