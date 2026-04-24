@@ -153,6 +153,8 @@ static const MemMapEntry nanhu_memmap[] = {
     [NANHU_DEV_UART1] = {0x60000, 0x10000},
     [NANHU_DEV_IRQGEN_NS] = {0x30000000, 0x1000},
     [NANHU_DEV_IRQGEN_SEC] = {0x30001000, 0x1000},
+    [NANHU_DEV_IRQGEN_NS2] = {0x30002000, 0x1000},
+    [NANHU_DEV_IRQGEN_SEC2] = {0x30003000, 0x1000},
     [NANHU_DEV_CLINT] = {0x38000000, 0x10000},
     [NANHU_DEV_PLIC] = {0x3C000000, 0x4000000},
     [NANHU_DEV_DRAM] = {0x80000000, 0x0},
@@ -211,6 +213,16 @@ static void bosc_nanhu_soc_realize(DeviceState *dev_soc, Error **errp)
     sysbus_create_simple(TYPE_BOSC_NANHU_IRQGEN,
                          memmap[NANHU_DEV_IRQGEN_SEC].base,
                          qdev_get_gpio_in(s->plic, IRQGEN_SEC_IRQ));
+
+    /* Dedicated non-secure IRQ generator for reverse-preemption test */
+    sysbus_create_simple(TYPE_BOSC_NANHU_IRQGEN,
+                         memmap[NANHU_DEV_IRQGEN_NS2].base,
+                         qdev_get_gpio_in(s->plic, IRQGEN_NS2_IRQ));
+
+    /* Dedicated secure IRQ generator for reverse-preemption test */
+    sysbus_create_simple(TYPE_BOSC_NANHU_IRQGEN,
+                         memmap[NANHU_DEV_IRQGEN_SEC2].base,
+                         qdev_get_gpio_in(s->plic, IRQGEN_SEC2_IRQ));
 
     /* ROM */
     memory_region_init_rom(&s->rom, OBJECT(dev_soc), "riscv.bosc.nanhu.rom", memmap[NANHU_DEV_ROM].size, &error_fatal);
