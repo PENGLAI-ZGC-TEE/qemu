@@ -95,12 +95,6 @@ static uint32_t plic_world_state(SiFivePLICState *plic, uint32_t addrid)
     return RISCV_CPU(cpu)->env.ws_csr & 0x1;
 }
 
-static bool plic_sec_busy(SiFivePLICState *plic, uint32_t addrid)
-{
-    return plic->irq_track[addrid].in_service &&
-           plic->irq_track[addrid].req_sec;
-}
-
 static bool plic_irq_allowed(SiFivePLICState *plic, uint32_t addrid,
                              uint32_t irq)
 {
@@ -109,17 +103,19 @@ static bool plic_irq_allowed(SiFivePLICState *plic, uint32_t addrid,
     uint32_t ws = plic_world_state(plic, addrid);
 
     if (mode == PLICMode_S) {
-        return sec == ws;
+        if (ws) {
+            return true;
+        }
+
+        return !sec;
     }
 
     if (mode == PLICMode_M) {
-        if (ws && !sec) {
+        if (ws) {
             return false;
         }
-        if (plic_sec_busy(plic, addrid) && !sec) {
-            return false;
-        }
-        return sec != ws;
+
+        return sec;
     }
 
     return false;
@@ -158,9 +154,9 @@ static uint32_t sifive_plic_claimed(SiFivePLICState *plic, uint32_t addrid)
             int irq = (i << 5) + j;
             uint32_t prio = plic->source_priority[irq];
             int enabled = pending_enabled_not_claimed & (1 << j);
+            bool allowed = plic_irq_allowed(plic, addrid, irq);
 
-            if (enabled && plic_irq_allowed(plic, addrid, irq) &&
-                prio > max_prio) {
+            if (enabled && allowed && prio > max_prio) {
                 max_irq = irq;
                 max_prio = prio;
             }
